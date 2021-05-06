@@ -10,27 +10,19 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+      options: --privileged
+      volumes:
+        - /sys/fs/cgroup:/sys/fs/cgroup
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Validate PKGBUILD
-        uses: 2m/arch-pkgbuild-builder@v1.16
+      - name: Build Arch Linux package
+        uses: FFY00/build-arch-package@master
         with:
-          target: 'pkgbuild'
-          pkgname: './'
-
-      - name: Validate .SRCINFO
-        uses: 2m/arch-pkgbuild-builder@v1.16
-        with:
-          target: 'srcinfo'
-          pkgname: './'
-
-      - name: Validate package
-        uses: 2m/arch-pkgbuild-builder@v1.16
-        with:
-          target: 'run'
-          pkgname: './'
-          command: 'plenti --version'
+          PKGBUILD: $GITHUB_WORKSPACE/PKGBUILD
+          OUTDIR: $HOME/arch-packages
 
