@@ -2,13 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   validate:
+    name: Validate package
     runs-on: ubuntu-latest
     container:
       image: archlinux:base-devel
@@ -26,3 +28,21 @@ jobs:
           PKGBUILD: $GITHUB_WORKSPACE/PKGBUILD
           OUTDIR: $HOME/arch-packages
 
+  push:
+    name: Push to master branch
+    needs: validate
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
