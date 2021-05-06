@@ -50,6 +50,6 @@ jobs:
       - name: Trigger CD workflow
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: CD Workflow
+          workflow: CD
           token: ${{ secrets.PERSONAL_TOKEN }}
 
