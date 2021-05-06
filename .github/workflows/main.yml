@@ -19,18 +19,18 @@ jobs:
         uses: 2m/arch-pkgbuild-builder@v1.16
         with:
           target: 'pkgbuild'
-          pkgname: '/'
+          pkgname: './'
 
       - name: Validate .SRCINFO
         uses: 2m/arch-pkgbuild-builder@v1.16
         with:
           target: 'srcinfo'
-          pkgname: '/'
+          pkgname: './'
 
       - name: Validate package
         uses: 2m/arch-pkgbuild-builder@v1.16
         with:
           target: 'run'
-          pkgname: '/'
+          pkgname: './'
           command: 'plenti --version'
 
