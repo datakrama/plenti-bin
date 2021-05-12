@@ -1,12 +1,10 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    paths:
+      - '.SRCINFO'
+      - 'PKGBUILD'
 
 jobs:
   validate:
@@ -31,7 +29,7 @@ jobs:
   push:
     name: Push to master branch
     needs: validate
-    if: ${{ github.event_name == 'push' }}
+    if: github.ref == 'ref/head/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -47,9 +45,24 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: master
 
-      - name: Trigger CD workflow
-        uses: benc-uk/workflow-dispatch@v1
+  release:
+    name: Release package
+    needs: push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          workflow: CD
-          token: ${{ secrets.PERSONAL_TOKEN }}
+          ref: master
+    
+      - name: Publish AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v2.2.4
+        with:
+          pkgname: plenti-bin
+          pkgbuild: ./PKGBUILD
+          commit_username: ${{ secrets.AUR_USERNAME }}
+          commit_email: ${{ secrets.AUR_EMAIL }}
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
 
