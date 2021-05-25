@@ -5,31 +5,28 @@ on:
     paths:
       - '.SRCINFO'
       - 'PKGBUILD'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Upstream synced version'
+        default: ''
+        required: true
 
 jobs:
-  validate:
-    name: Validate package
+  build:
+    name: Build package
     runs-on: ubuntu-latest
-    container:
-      image: archlinux:base-devel
-      options: --privileged
-      volumes:
-        - /sys/fs/cgroup:/sys/fs/cgroup
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2.3.4
 
-      - name: Build Arch Linux package
-        uses: FFY00/build-arch-package@master
-        with:
-          PKGBUILD: $GITHUB_WORKSPACE/PKGBUILD
-          OUTDIR: $HOME/arch-packages
+      - name: Build & validate package
+        uses: datakrama/archlinux-package-action@v1
 
-  push:
-    name: Push to master branch
-    needs: validate
-    if: github.ref == 'ref/head/main'
+  release:
+    name: Release package
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
@@ -38,31 +35,30 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+          ref: aur
 
-      - name: Push changes
+      - run: |
+          if [[ -z "${{ github.event.inputs.version }}" ]]; then
+            COMMIT_MESSAGE="Update AUR package"
+          elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+            COMMIT_MESSAGE="feat: bump to ${{ github.event.inputs.version }}"
+          fi
+          git checkout main PKGBUILD .SRCINFO
+          git config --local user.name ${{ secrets.GIT_USERNAME }}
+          git config --local user.email ${{ secrets.GIT_EMAIL }}
+          git add PKGBUILD .SRCINFO
+          git commit -m "$COMMIT_MESSAGE"
+
+      - name: Push changes to GitHub
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: master
+          branch: aur
 
-  release:
-    name: Release package
-    needs: push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.3.4
+      - name: Push changes to AUR
+        uses: datakrama/push-aur-action@v1
         with:
-          ref: master
-    
-      - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v2.2.4
-        with:
-          pkgname: plenti-bin
-          pkgbuild: ./PKGBUILD
-          commit_username: ${{ secrets.AUR_USERNAME }}
-          commit_email: ${{ secrets.AUR_EMAIL }}
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update AUR package
-
+          pkgname: ${{ github.event.repository.name }}
+          git_username: ${{ secrets.GIT_USERNAME }}
+          git_email: ${{ secrets.GIT_EMAIL }}
+          private_ssh_key: ${{ secrets.AUR_PRIVATE_SSH_KEY }}
