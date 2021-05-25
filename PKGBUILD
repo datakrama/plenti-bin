@@ -1,8 +1,8 @@
-# Maintainer: A. Husen <hello@husen.id>
+# Maintainer: A. Husen <hi@husen.id>
 pkgname=plenti-bin
 _pkgname=plenti
 pkgver=0.4.19
-pkgrel=1
+pkgrel=2
 pkgdesc="Static Site Generator with Go backend and Svelte frontend"
 arch=('x86_64')
 url="https://github.com/plentico/plenti"
