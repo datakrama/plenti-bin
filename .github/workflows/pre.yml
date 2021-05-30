@@ -25,8 +25,8 @@ jobs:
         id: search-version
         uses: nguyenvanuyn96/str-find-action@master
         with:
-          find: '${{ steps.get-version.outputs.version }}'
-          include: 'PKGBUILD'
+          find: "${{ steps.get-version.outputs.version }}"
+          include: "PKGBUILD"
 
   build:
     name: Build
