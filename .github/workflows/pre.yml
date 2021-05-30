@@ -1,0 +1,77 @@
+name: Pre
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    outputs:
+      found: ${{ steps.search-version.outputs.fileFoundCount }}
+      version: ${{ steps.get-version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get upstream version
+        id: get-version
+        run: echo "::set-output name=version::$(curl --silent "https://api.github.com/repos/plentico/plenti/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' | cut -c 2-)"
+
+      - name: Find version on PKGBUILD
+        id: search-version
+        uses: nguyenvanuyn96/str-find-action@master
+        with:
+          find: '${{ steps.get-version.outputs.version }}'
+          include: 'PKGBUILD'
+
+  build:
+    name: Build
+    needs: check
+    if: needs.check.outputs.found != '0'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update pkgver & reset pkgrel on PKGBUILD
+        run: |
+          sed -i 's:^pkgver=.*$:pkgver=${{ needs.check.outputs.version }}:g' PKGBUILD
+          sed -i 's:^pkgrel=.*$:pkgrel=1:g' PKGBUILD
+
+      - name: Update checksums on PKGBUILD
+        uses: datakrama/archlinux-package-action@v1
+        with:
+          flags: ""
+          namcap: false
+          updpkgsums: true
+
+      - name: Generate .SRCINFO
+        uses: datakrama/archlinux-package-action@v1
+        with:
+          flags: ""
+          namcap: false
+          srcinfo: true
+
+      - name: Commit files
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add PKGBUILD .SRCINFO
+          git commit -m "feat: bump to v${{ needs.check.outputs.version }}"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger CI workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: CI
+          token: ${{ secrets.PERSONAL_TOKEN }}
+          inputs: '{ "version": ${{ needs.check.outputs.version }} }'
