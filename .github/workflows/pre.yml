@@ -40,6 +40,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
       - name: Update pkgver & reset pkgrel on PKGBUILD
         run: |
@@ -60,7 +63,7 @@ jobs:
           namcap: false
           srcinfo: true
 
-      - name: Commit files
+      - name: Commit changes
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
