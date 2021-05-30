@@ -10,7 +10,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     outputs:
-      found: ${{ steps.search-version.outputs.fileFoundCount }}
+      found: ${{ steps.search-version.outputs.found }}
       version: ${{ steps.get-version.outputs.version }}
 
     steps:
@@ -23,15 +23,18 @@ jobs:
 
       - name: Find version on PKGBUILD
         id: search-version
-        uses: nguyenvanuyn96/str-find-action@master
-        with:
-          find: "${{ steps.get-version.outputs.version }}"
-          include: "PKGBUILD"
+        run: |
+          if grep -q "${{ steps.get-version.outputs.version }}" PKGBUILD
+          then
+            echo "::set-output name=found::true"
+          else
+            echo "::set-output name=found::false"
+          fi
 
   build:
     name: Build
     needs: check
-    if: needs.check.outputs.found != '0'
+    if: needs.check.outputs.found == 'false'
     runs-on: ubuntu-latest
 
     steps:
