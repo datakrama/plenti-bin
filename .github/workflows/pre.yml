@@ -2,7 +2,7 @@ name: Pre
 
 on:
   schedule:
-    - cron: "30 5 * * *"
+    - cron: "25 3 * * *"
   workflow_dispatch:
 
 jobs:
